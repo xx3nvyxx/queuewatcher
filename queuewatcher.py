@@ -86,7 +86,7 @@ class QueueWatcher(discord.Client):
                 await message.add_reaction('\N{CROSS MARK}')
                 return
             if text[1] == "errortest":
-                if message.author.id != state["config"]["admin"] and message.author.guild_permissions.administrator != True:
+                if message.author.id != state["config"]["admin"]:
                     await message.add_reaction('\N{CROSS MARK}')
                     return
                 raise discord.InvalidData
