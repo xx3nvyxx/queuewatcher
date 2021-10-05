@@ -6,6 +6,7 @@ from os import path
 import datetime
 import discord
 import yaml
+import sys
 
 state_filename = "queuewatcher_state.yml"
 state = {}
@@ -27,6 +28,8 @@ def readState():
         state["members"] = {}
     if ("config" not in state):
         state["config"] = {}
+    if ("admin" not in state["config"]):
+        state["config"]["admin"] = int(input("User ID of the admin user: "))
     if ("discord" not in state["config"]):
         state["config"]["discord"] = input("Discord client token: ")
     if ("pushover" not in state["config"]):
@@ -53,16 +56,20 @@ class QueueWatcher(discord.Client):
             return "Whitelist"
         elif act == "NoPixel RP | Public Purple | Visit us @ nopixel.net":
             return "Public Purple"
-        elif act == "NoPixel RP | Public Orange | Visit us @ nopixel.net":
-            return "Public Orange"
+        elif act == "NoPixel RP | Public Green | Visit us @ nopixel.net":
+            return "Public Green"
         else:
-            print("details:" + act)
+            print("details: " + act)
+            return "Other Server"
 
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
         print('-------')
+
+    async def on_error(event, args, kwargs):
+        sys.exit(1)
 
     async def on_message(self, message):
         global state
@@ -78,8 +85,13 @@ class QueueWatcher(discord.Client):
             if len(text) == 1:
                 await message.add_reaction('\N{CROSS MARK}')
                 return
+            if text[1] == "errortest":
+                if message.author.id != state["config"]["admin"] and message.author.guild_permissions.administrator != True:
+                    await message.add_reaction('\N{CROSS MARK}')
+                    return
+                raise discord.InvalidData
             if text[1] == "channelLock":
-                if message.author.id != 318152863605850113 and message.author.guild_permissions.administrator != True:
+                if message.author.id != state["config"]["admin"] and message.author.guild_permissions.administrator != True:
                     await message.add_reaction('\N{CROSS MARK}')
                     return
                 if message.guild.id not in state["guilds"]:
@@ -89,7 +101,7 @@ class QueueWatcher(discord.Client):
                     await message.add_reaction('\N{CROSS MARK}')
                     return
             if text[1] == "channelUnlock":
-                if message.author.id != 318152863605850113 and message.author.guild_permissions.administrator != True:
+                if message.author.id != state["config"]["admin"] and message.author.guild_permissions.administrator != True:
                     await message.add_reaction('\N{CROSS MARK}')
                     return
                 if message.guild.id in state["guilds"]:
@@ -289,7 +301,7 @@ class QueueWatcher(discord.Client):
             if not (state["members"][toMemberID].get("queuejoin", False)):
                 return
             message = name + " has opened FiveM and is in the menus. "
-        if (status == "Public Purple" or status == "Public Orange"):
+        if (status == "Public Purple" or status == "Public Green"):
             if state["members"][toMemberID].get("ignorepublic", False):
                 return
             message = name + " is in the " + status + " server. "
