@@ -85,10 +85,17 @@ class QueueWatcher(discord.Client):
             if len(text) == 1:
                 await message.add_reaction('\N{CROSS MARK}')
                 return
+            if text[1] == "ping":
+                if message.author.id != state["config"]["admin"]:
+                    await message.add_reaction('\N{CROSS MARK}')
+                    return
+                await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+                await message.channel.send("blargh")
             if text[1] == "errortest":
                 if message.author.id != state["config"]["admin"]:
                     await message.add_reaction('\N{CROSS MARK}')
                     return
+                await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
                 raise discord.InvalidData
             if text[1] == "channelLock":
                 if message.author.id != state["config"]["admin"] and message.author.guild_permissions.administrator != True:
@@ -256,7 +263,9 @@ class QueueWatcher(discord.Client):
             before = datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
             after = datetime.datetime.utcnow() - datetime.timedelta(days=1)
             async for message in channel.history(before=before, after=after):
-                if message.author == self.user or message.content.startswith("!QueueWatcher") or message.content.startswith("!queuewatcher"):
+                if message.author == self.user and message.created_at <= (datetime.datetime.utcnow() - datetime.timedelta(seconds=600)):
+                    await message.delete()
+                elif message.content.startswith("!QueueWatcher") or message.content.startswith("!queuewatcher"):
                     await message.delete()
             
         #check for other users
@@ -277,6 +286,10 @@ class QueueWatcher(discord.Client):
                 start = activity.timestamps.get("start")
                 break
             prevStatus = state["members"][memberID].get("status", "Unknown")
+            if status != prevStatus and prevStatus not in ["Unknown", "Menus"]:
+                name = state["members"][memberID].get("nickname", str(member))
+                message = name + " is no longer in the " + prevStatus + " server. "
+                print(strftime("%Y-%m-%d %H:%M:%S") + " - " + message)
             userset = state["members"][memberID].get("followers", set()) | {memberID}
             for toUser in userset:
                 if status != prevStatus:
