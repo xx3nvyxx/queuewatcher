@@ -63,6 +63,7 @@ class QueueWatcher(discord.Client):
             return "Other Server"
 
     async def on_ready(self):
+        print(strftime("%Y-%m-%d %H:%M:%S") + " - Bot starting")
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
@@ -306,6 +307,8 @@ class QueueWatcher(discord.Client):
         aboutGuild = self.get_guild(state["members"][aboutMemberID]["guild"])
         aboutMember = aboutGuild.get_member(aboutMemberID)
         name = state["members"][aboutMemberID].get("nickname", str(aboutMember))
+        if status == "Other Server":
+            return
         if status == "Unknown":
             if not (state["members"][toMemberID].get("crashdetection", False)):
                 return
