@@ -258,48 +258,51 @@ class QueueWatcher(discord.Client):
 
     @tasks.loop(seconds=5)
     async def UserCheck(self):
-        #clear older messages
-        for gid in state["guilds"]:
-            channel = self.get_channel(state["guilds"][gid])
-            before = datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
-            after = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-            async for message in channel.history(before=before, after=after):
-                if message.author == self.user and message.created_at <= (datetime.datetime.utcnow() - datetime.timedelta(seconds=600)):
-                    await message.delete()
-                elif message.content.startswith("!QueueWatcher") or message.content.startswith("!queuewatcher"):
-                    await message.delete()
+        try:
+            #clear older messages
+            for gid in state["guilds"]:
+                channel = self.get_channel(state["guilds"][gid])
+                before = datetime.datetime.utcnow() - datetime.timedelta(seconds=60)
+                after = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+                async for message in channel.history(before=before, after=after):
+                    if message.author == self.user and message.created_at <= (datetime.datetime.utcnow() - datetime.timedelta(seconds=600)):
+                        await message.delete()
+                    elif message.content.startswith("!QueueWatcher") or message.content.startswith("!queuewatcher"):
+                        await message.delete()
             
-        #check for other users
-        for memberID in state["members"]:
-            if state["members"][memberID].get("enabled", True) == False:
-                continue
-            guild = self.get_guild(state["members"][memberID]["guild"])
-            member = guild.get_member(memberID)
-            status = "Unknown"
-            start = int(time()*1000)
-            for activity in member.activities:
-                try:
-                    if activity.application_id != 382624125287399424:
-                        continue
-                except (AttributeError, TypeError):
+            for memberID in state["members"]:
+                if state["members"][memberID].get("enabled", True) == False:
                     continue
-                status = await self.short_activity(activity.details)
-                start = activity.timestamps.get("start")
-                break
-            prevStatus = state["members"][memberID].get("status", "Unknown")
-            if status != prevStatus and prevStatus not in ["Unknown", "Menus"]:
-                name = state["members"][memberID].get("nickname", str(member))
-                message = name + " is no longer in the " + prevStatus + " server. "
-                print(strftime("%Y-%m-%d %H:%M:%S") + " - " + message)
-            userset = state["members"][memberID].get("followers", set()) | {memberID}
-            for toUser in userset:
-                if status != prevStatus:
-                    state["members"][toUser].pop(memberID, None)
-                    if toUser == memberID:
-                        state["members"][memberID]["status"] = status
-                    writeState()
-                if status != "Unknown" or (status == "Unknown" and prevStatus == "Menus"):
-                    await self.sendMessage(toUser, memberID, status, start)
+                guild = self.get_guild(state["members"][memberID]["guild"])
+                member = guild.get_member(memberID)
+                status = "Unknown"
+                start = int(time()*1000)
+                for activity in member.activities:
+                    try:
+                        if activity.application_id != 382624125287399424:
+                            continue
+                    except (AttributeError, TypeError):
+                        continue
+                    status = await self.short_activity(activity.details)
+                    start = activity.timestamps.get("start")
+                    break
+                prevStatus = state["members"][memberID].get("status", "Unknown")
+                if status != prevStatus and prevStatus not in ["Unknown", "Menus"]:
+                    name = state["members"][memberID].get("nickname", str(member))
+                    message = name + " is no longer in the " + prevStatus + " server. "
+                    print(strftime("%Y-%m-%d %H:%M:%S") + " - " + message)
+                userset = state["members"][memberID].get("followers", set()) | {memberID}
+                for toUser in userset:
+                    if status != prevStatus:
+                        state["members"][toUser].pop(memberID, None)
+                        if toUser == memberID:
+                            state["members"][memberID]["status"] = status
+                        writeState()
+                    if status != "Unknown" or (status == "Unknown" and prevStatus == "Menus"):
+                        await self.sendMessage(toUser, memberID, status, start)
+        except discord.DiscordException:
+            print(strftime("%Y-%m-%d %H:%M:%S") + " - A discord error occurred")
+            return
 
     async def sendMessage(self, toMemberID, aboutMemberID, status, activityStart):
         if state["members"][aboutMemberID].get("enabled", True) == False:
