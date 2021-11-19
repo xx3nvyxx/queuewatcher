@@ -124,6 +124,50 @@ class QueueWatcher(discord.Client):
                 state["members"][message.author.id]["channel"] = message.channel.id
                 state["members"][message.author.id]["guild"] = message.guild.id
                 await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+            if text[1] == "status":
+                target = message.author.id
+                if len(text) == 2:
+                    if message.author.id not in state["members"]:
+                        await message.channel.send("User not registered")
+                        await message.add_reaction('\N{CROSS MARK}')
+                        return
+                    elif state["members"][message.author.id]["guild"] != message.guild.id:
+                        await message.channel.send("User not associated with this discord server.")
+                        await message.add_reaction('\N{CROSS MARK}')
+                        return
+                else:
+                    target = int("".join(filter(str.isdigit, text[2])))
+                    if target != message.author.id:
+                        if message.author.id != state["config"]["admin"] and message.author.guild_permissions.administrator != True:
+                            await message.add_reaction('\N{CROSS MARK}')
+                            return
+                        if message.author.id != state["config"]["admin"] and state["members"][target][guild] != message.guild.id:
+                            await message.channel.send("User not associated with this discord server.")
+                            await message.add_reaction('\N{CROSS MARK}')
+                            return
+                await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+                response = "User details for "+ str(target) + "\n"
+                if "nickname" in state["members"][target]:
+                    response += "nickname: " + str(state["members"][target]["nickname"]) + "\n"
+                if "enabled" in state["members"][target]:
+                    response += "enabled: " + str(state["members"][target]["enabled"]) + "\n"
+                if "status" in state["members"][target]:
+                    response += "status: " + str(state["members"][target]["status"]) + "\n"
+                if "crashdetection" in state["members"][target]:
+                    response += "crashdetection: " + str(state["members"][target]["crashdetection"]) + "\n"
+                if "ignorepublic" in state["members"][target]:
+                    response += "ignorepublic: " + str(state["members"][target]["ignorepublic"]) + "\n"
+                if "allowdms" in state["members"][target]:
+                    response += "allowdms: " + str(state["members"][target]["allowdms"]) + "\n"
+                if "repeat" in state["members"][target]:
+                    response += "repeat: " + str(state["members"][target]["repeat"]) + "\n"
+                if "pushover" in state["members"][target]:
+                    response += "pushover: enabled (user key hidden)\n"
+                if "priority" in state["members"][target]:
+                    response += "priority: " + str(state["members"][target]["priority"]) + "\n"
+                if "sound" in state["members"][target]:
+                    response += "sound: " + str(state["members"][target]["sound"]) + "\n"
+                await message.channel.send(content=response, delete_after=60)
             writeState()
             if message.author.id not in state["members"]:
                 await message.add_reaction('\N{CROSS MARK}')
@@ -253,6 +297,7 @@ class QueueWatcher(discord.Client):
                 await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             if text[1] == "off":
                 state["members"][message.author.id]["enabled"] = False
+                state["members"][message.author.id]["status"] = "Unknown"
                 await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             writeState()
 
