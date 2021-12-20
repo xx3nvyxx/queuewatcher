@@ -367,11 +367,13 @@ class QueueWatcher(discord.Client):
                     message = name + " has opened FiveM and is in the menus. "
                 else:
                     return
-            else:
+            elif prevStatus in ["Public Purple", "Public Green", "Whitelist"]:
                 if state["members"][toMemberID].get("crashdetection", False):
                     message = name + " has left the game, was kicked, or FiveM crashed. "
                 else:
                     return
+            else:
+                return
         if (status == "Public Purple" or status == "Public Green"):
             if state["members"][toMemberID].get("ignorepublic", False):
                 return
