@@ -316,8 +316,6 @@ class QueueWatcher(discord.Client):
                         await message.delete()
             
             for memberID in state["members"]:
-                if state["members"][memberID].get("enabled", True) == False:
-                    continue
                 guild = self.get_guild(state["members"][memberID]["guild"])
                 member = guild.get_member(memberID)
                 status = "Unknown"
@@ -343,13 +341,15 @@ class QueueWatcher(discord.Client):
                         if toUser == memberID:
                             state["members"][memberID]["status"] = status
                         writeState()
+                    if state["members"][toUser].get("enabled", True) == False:
+                        continue
                     if status != "Unknown" or (status == "Unknown" and prevStatus == "Menus"):
-                        await self.sendMessage(toUser, memberID, status, start)
+                        await self.sendMessage(toUser, memberID, status, prevStatus, start)
         except discord.DiscordException:
             print(strftime("%Y-%m-%d %H:%M:%S") + " - A discord error occurred")
             return
 
-    async def sendMessage(self, toMemberID, aboutMemberID, status, activityStart):
+    async def sendMessage(self, toMemberID, aboutMemberID, status, prevStatus, activityStart):
         if state["members"][aboutMemberID].get("enabled", True) == False:
             return
         aboutGuild = self.get_guild(state["members"][aboutMemberID]["guild"])
@@ -362,9 +362,16 @@ class QueueWatcher(discord.Client):
                 return
             message = name + " has left queue or an error occurred. Please check if FiveM or the queue crashed."
         if status == "Menus":
-            if not (state["members"][toMemberID].get("queuejoin", False)):
-                return
-            message = name + " has opened FiveM and is in the menus. "
+            if prevStatus == "Unknown":
+                if state["members"][toMemberID].get("queuejoin", False):
+                    message = name + " has opened FiveM and is in the menus. "
+                else:
+                    return
+            else:
+                if state["members"][toMemberID].get("crashdetection", False):
+                    message = name + " has left the game, was kicked, or FiveM crashed. "
+                else:
+                    return
         if (status == "Public Purple" or status == "Public Green"):
             if state["members"][toMemberID].get("ignorepublic", False):
                 return
