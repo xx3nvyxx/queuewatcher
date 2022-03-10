@@ -26,6 +26,8 @@ def readState():
         state = {}
     if ("members" not in state):
         state["members"] = {}
+    if ("servers" not in state):
+        state["servers"] = []
     if ("config" not in state):
         state["config"] = {}
     if ("admin" not in state["config"]):
@@ -58,9 +60,11 @@ class QueueWatcher(discord.Client):
             return "Public Purple"
         elif act == "NoPixel RP | Public Green | Visit us @ nopixel.net":
             return "Public Green"
-        else:
+        elif act not in state["servers"]:
             print("details: " + act)
-            return "Other Server"
+            state["servers"].append(act)
+            writeState()
+        return "Other Server"
 
     async def on_ready(self):
         print(strftime("%Y-%m-%d %H:%M:%S") + " - Bot starting")
