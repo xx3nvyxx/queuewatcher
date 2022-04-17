@@ -6,6 +6,7 @@ from os import path
 import datetime
 import discord
 import yaml
+import traceback
 import sys
 
 state_filename = "queuewatcher_state.yml"
@@ -62,7 +63,7 @@ class QueueWatcher(discord.Client):
             return "Public Green"
         elif act not in state["servers"]:
             print("details: " + act)
-            state["servers"].append(act)
+            state["servers"].append(str(act))
             writeState()
         return "Other Server"
 
@@ -322,15 +323,19 @@ class QueueWatcher(discord.Client):
             for memberID in state["members"]:
                 guild = self.get_guild(state["members"][memberID]["guild"])
                 member = guild.get_member(memberID)
+                if member is None:
+                    continue
                 status = "Unknown"
                 start = int(time()*1000)
                 for activity in member.activities:
+                    if activity is None:
+                        continue
                     try:
                         if activity.application_id != 382624125287399424:
                             continue
                     except (AttributeError, TypeError):
                         continue
-                    status = await self.short_activity(activity.details)
+                    status = await self.short_activity(activity.state)
                     start = activity.timestamps.get("start")
                     break
                 prevStatus = state["members"][memberID].get("status", "Unknown")
@@ -351,6 +356,7 @@ class QueueWatcher(discord.Client):
                         await self.sendMessage(toUser, memberID, status, prevStatus, start)
         except discord.DiscordException:
             print(strftime("%Y-%m-%d %H:%M:%S") + " - A discord error occurred")
+            print(traceback.format_exc())
             return
 
     async def sendMessage(self, toMemberID, aboutMemberID, status, prevStatus, activityStart):
