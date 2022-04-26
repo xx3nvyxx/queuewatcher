@@ -55,7 +55,7 @@ class QueueWatcher(discord.Client):
     async def short_activity(self, act):
         if act == "In the menus":
             return "Menus"
-        elif act == "nopixel RP | Signup @ nopixel.net":
+        elif act == "NoPixel RP | Visit us @ nopixel.net":
             return "Whitelist"
         elif act == "NoPixel RP | Public Purple | Visit us @ nopixel.net":
             return "Public Purple"
